@@ -1,170 +1,186 @@
-// Winamp Visualizer Web App
+/*
+ * XP Music Visualizer
+ *
+ * This script implements a custom music visualization inspired by the classic
+ * Windows Media Player visualizations (e.g. Alchemy, Ambience, Bars and Waves).
+ * It uses the Web Audio API to analyse the frequency spectrum of an audio
+ * source (file or microphone) and draws swirling lines and arcs on a canvas.
+ *
+ * The colours and motion of the arcs are driven by both the current time
+ * and the amplitude of each frequency band.  Colour transitions cycle
+ * through the spectrum (reds, blues, greens, yellows) and brighten in
+ * response to louder audio, while a trailing effect gives a smooth,
+ * continuous look.  If no audio source is connected, the visualizer still
+ * animates using a low-level signal so that the screen is never blank.
+ */
 
-// Grab DOM elements
-const canvas = document.getElementById('visualizerCanvas');
-const milkToggle = document.getElementById('milkToggle');
-const geissToggle = document.getElementById('geissToggle');
-const fileInput = document.getElementById('fileInput');
-const micButton = document.getElementById('micButton');
+(() => {
+  const fileButton = document.getElementById('btn-file');
+  const fileInput = document.getElementById('file-input');
+  const micButton = document.getElementById('btn-mic');
+  const overlay = document.getElementById('overlay');
+  const canvas = document.getElementById('visualizer');
 
-// Audio and visualization state
-let audioCtx = null;
-let audioSource = null;
-let visualizer = null;
-let currentMode = 'milk';
-let geissTime = 0;
-const geissCtx = canvas.getContext('2d');
+  let audioCtx;
+  let analyser;
+  let sourceNode;
+  let dataArray;
+  let visualizer;
+  let microphoneStream;
 
-// Initialize the AudioContext lazily
-function initAudioContext() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-}
+  class XPVisualizer {
+    constructor(canvasElement, analyserNode) {
+      this.canvas = canvasElement;
+      this.ctx = this.canvas.getContext('2d');
+      this.analyser = analyserNode;
+      this.bufferLength = this.analyser.frequencyBinCount;
+      this.dataArray = new Uint8Array(this.bufferLength);
+      this.time = 0;
+      this.resize = this.resize.bind(this);
+      this.animate = this.animate.bind(this);
+      window.addEventListener('resize', this.resize);
+      this.resize();
+      requestAnimationFrame(this.animate);
+    }
 
-// Load a default preset from butterchurn-presets
-function getDefaultPreset() {
-  const presets = butterchurnPresets.getPresets();
-  // Choose a deterministic preset (first key) for reproducibility
-  const keys = Object.keys(presets);
-  if (keys.length > 0) {
-    return presets[keys[0]];
-  }
-  return null;
-}
+    resize() {
+      // Set canvas size to full window
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+      this.centerX = this.canvas.width / 2;
+      this.centerY = this.canvas.height / 2;
+      this.maxRadius = Math.min(this.centerX, this.centerY) * 0.9;
+    }
 
-// Configure the Butterchurn visualizer and connect the current audio source
-async function setupButterchurn() {
-  initAudioContext();
-  // Create the visualizer only once
-  if (!visualizer) {
-    visualizer = butterchurn.createVisualizer(audioCtx, canvas, {
-      width: canvas.clientWidth,
-      height: canvas.clientHeight,
-      pixelRatio: window.devicePixelRatio || 1,
-    });
-    const preset = getDefaultPreset();
-    if (preset) {
-      visualizer.loadPreset(preset, 0.0);
+    animate() {
+      // Pull the frequency data from the analyser
+      this.analyser.getByteFrequencyData(this.dataArray);
+
+      const ctx = this.ctx;
+      const width = this.canvas.width;
+      const height = this.canvas.height;
+
+      // Fade the previous frame for a trailing effect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, width, height);
+
+      const len = this.bufferLength;
+      const angleStep = (Math.PI * 2) / len;
+
+      // Draw concentric arcs representing frequency bands
+      for (let i = 0; i < len; i++) {
+        const amp = this.dataArray[i] / 255; // Normalized amplitude [0,1]
+        const radius = this.maxRadius * (0.5 + amp * 0.5);
+        const startAngle = i * angleStep + this.time * 0.0003;
+        const endAngle = startAngle + angleStep * 0.9;
+        const hue = (i / len * 360 + this.time * 0.02) % 360;
+        const lightness = 40 + amp * 40;
+        ctx.strokeStyle = `hsla(${hue}, 80%, ${lightness}%, ${0.3 + amp * 0.5})`;
+        ctx.lineWidth = 1 + amp * 3;
+        ctx.beginPath();
+        ctx.arc(this.centerX, this.centerY, radius, startAngle, endAngle);
+        ctx.stroke();
+      }
+
+      // Draw swirling particles around the centre
+      for (let i = 0; i < len; i++) {
+        const amp = this.dataArray[i] / 255;
+        const radius = this.maxRadius * (0.4 + amp * 0.6);
+        const angle = i * angleStep + this.time * 0.0005;
+        const x = this.centerX + Math.cos(angle) * radius;
+        const y = this.centerY + Math.sin(angle) * radius;
+        const hue = (angle / Math.PI * 180 + this.time * 0.05) % 360;
+        const lightness = 50 + amp * 30;
+        ctx.fillStyle = `hsla(${hue}, 90%, ${lightness}%, ${0.4 + amp * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 2 + amp * 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      this.time += 16;
+      requestAnimationFrame(this.animate);
     }
   }
-  if (audioSource) {
-    visualizer.connectAudio(audioSource);
-  }
-}
 
-// Connect an HTMLMediaElement (file or microphone stream) to the audio context
-function connectMediaElement(element) {
-  initAudioContext();
-  if (audioSource) {
-    try { audioSource.disconnect(); } catch (_) {}
+  async function ensureAudioContext() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.8;
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+    }
+    // Resume the context on user interaction if suspended
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
   }
-  audioSource = audioCtx.createMediaElementSource(element);
-  audioSource.connect(audioCtx.destination);
-  if (visualizer) {
-    visualizer.connectAudio(audioSource);
-  }
-}
 
-// Connect a MediaStream (microphone) to the audio context
-function connectMediaStream(stream) {
-  initAudioContext();
-  if (audioSource) {
-    try { audioSource.disconnect(); } catch (_) {}
+  function stopCurrentSource() {
+    if (sourceNode) {
+      try {
+        sourceNode.disconnect();
+      } catch (e) {
+        // Ignore
+      }
+    }
+    if (microphoneStream) {
+      microphoneStream.getTracks().forEach((t) => t.stop());
+      microphoneStream = null;
+    }
   }
-  audioSource = audioCtx.createMediaStreamSource(stream);
-  // Only connect to destination if you want to hear your mic; omit to silence
-  // audioSource.connect(audioCtx.destination);
-  if (visualizer) {
-    visualizer.connectAudio(audioSource);
-  }
-}
 
-// Handle audio file selection
-fileInput.addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  const audioElem = new Audio();
-  audioElem.src = url;
-  audioElem.crossOrigin = 'anonymous';
-  audioElem.addEventListener('canplay', () => {
-    connectMediaElement(audioElem);
-    audioElem.play().catch((err) => {
-      console.error('Audio play error:', err);
-    });
+  async function loadFile(file) {
+    await ensureAudioContext();
+    stopCurrentSource();
+    const arrayBuffer = await file.arrayBuffer();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    const bufferSource = audioCtx.createBufferSource();
+    bufferSource.buffer = audioBuffer;
+    bufferSource.loop = true;
+    bufferSource.connect(analyser);
+    bufferSource.connect(audioCtx.destination);
+    bufferSource.start();
+    sourceNode = bufferSource;
+    if (!visualizer) {
+      visualizer = new XPVisualizer(canvas, analyser);
+    }
+    overlay.classList.add('hidden');
+  }
+
+  async function useMicrophone() {
+    await ensureAudioContext();
+    stopCurrentSource();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      microphoneStream = stream;
+      const micSource = audioCtx.createMediaStreamSource(stream);
+      micSource.connect(analyser);
+      sourceNode = micSource;
+      if (!visualizer) {
+        visualizer = new XPVisualizer(canvas, analyser);
+      }
+      overlay.classList.add('hidden');
+    } catch (err) {
+      console.error('Microphone access denied:', err);
+      overlay.textContent = 'Microphone access was denied. Please allow microphone access or load an audio file.';
+      overlay.classList.remove('hidden');
+    }
+  }
+
+  fileButton.addEventListener('click', () => {
+    fileInput.value = '';
+    fileInput.click();
   });
-});
 
-// Handle microphone capture
-micButton.addEventListener('click', async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    connectMediaStream(stream);
-  } catch (err) {
-    console.error('Microphone error:', err);
-    alert('Microphone access denied or unavailable.');
-  }
-});
+  fileInput.addEventListener('change', (e) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      loadFile(files[0]);
+    }
+  });
 
-// Mode toggles
-milkToggle.addEventListener('click', () => {
-  currentMode = 'milk';
-  milkToggle.classList.add('active');
-  geissToggle.classList.remove('active');
-  setupButterchurn();
-});
-
-geissToggle.addEventListener('click', () => {
-  currentMode = 'geiss';
-  geissToggle.classList.add('active');
-  milkToggle.classList.remove('active');
-});
-
-// Resize canvas and visualizers when the window changes
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * (window.devicePixelRatio || 1);
-  canvas.height = rect.height * (window.devicePixelRatio || 1);
-  if (visualizer) {
-    visualizer.setRendererSize(canvas.width, canvas.height);
-  }
-}
-window.addEventListener('resize', resizeCanvas);
-
-// Render loop
-function tick() {
-  if (currentMode === 'milk' && visualizer) {
-    visualizer.render();
-  } else if (currentMode === 'geiss') {
-    renderGeiss();
-  }
-  requestAnimationFrame(tick);
-}
-
-// Simple Geiss stub: draws a swirling color gradient
-function renderGeiss() {
-  geissTime += 0.015;
-  const w = canvas.width;
-  const h = canvas.height;
-  // Compute color components based on sine waves offset by 120°
-  const r = 0.5 * (Math.sin(geissTime) + 1.0);
-  const g = 0.5 * (Math.sin(geissTime + 2.094) + 1.0);
-  const b = 0.5 * (Math.sin(geissTime + 4.188) + 1.0);
-  geissCtx.fillStyle = `rgb(${Math.floor(r * 255)}, ${Math.floor(g * 255)}, ${Math.floor(b * 255)})`;
-  geissCtx.fillRect(0, 0, w, h);
-}
-
-// Initialize canvas size and Butterchurn on startup
-function init() {
-  resizeCanvas();
-  setupButterchurn();
-  tick();
-}
-
-// Kick things off when the document is loaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+  micButton.addEventListener('click', () => {
+    useMicrophone();
+  });
+})();

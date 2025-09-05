@@ -1,30 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Winamp Visualizer Web</title>
-  <link rel="stylesheet" href="styles.css">
-  <!-- Butterchurn and preset libraries loaded from CDN -->
-  <script src="https://unpkg.com/butterchurn@2.6.8/lib/butterchurn.min.js"></script>
-  <script src="https://unpkg.com/butterchurn-presets@2.3.1/lib/butterchurnPresets.min.js"></script>
-</head>
-<body>
-  <header class="topbar">
-    <h1>Winamp Visualizer</h1>
-  </header>
-  <main class="container">
-    <div class="controls">
-      <button id="milkToggle" class="btn active">MilkDrop</button>
-      <button id="geissToggle" class="btn">Geiss</button>
-      <label class="file-label">
-        <input type="file" id="fileInput" accept="audio/*" hidden>
-        <span class="btn">Load Audio File</span>
-      </label>
-      <button id="micButton" class="btn">Use Microphone</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XP Music Visualizer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="controls">
+      <h1>XP Music Visualizer</h1>
+      <button id="btn-file">Load Audio File</button>
+      <input
+        type="file"
+        id="file-input"
+        accept="audio/*"
+        style="display: none"
+      />
+      <button id="btn-mic">Use Microphone</button>
     </div>
-    <canvas id="visualizerCanvas"></canvas>
-  </main>
-  <script src="app.js"></script>
-</body>
+    <div id="overlay" class="message-overlay">
+      Select an audio file or enable the microphone to start the visualization.
+    </div>
+    <canvas id="visualizer"></canvas>
+    <script src="app.js"></script>
+  </body>
 </html>

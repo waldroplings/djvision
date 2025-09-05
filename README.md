@@ -1,39 +1,51 @@
-# Winamp Visualizer Web MVP
+# XP Music Visualizer
 
-This folder contains a browser‑based music visualizer built with
-JavaScript, WebAudio and WebGL.  It leverages the
-[`butterchurn`](https://github.com/jberg/butterchurn) library (a
-reimplementation of Winamp’s MilkDrop visualizer) and includes a
-stubbed Geiss module implemented on top of the HTML5 canvas.  The
-result is a responsive, modern web application with a clean UI and
-toggleable visualizer modules.
+This project is a web‑based music visualizer inspired by the classic
+Windows XP/Windows Media Player visualizations such as **Ambience**,
+**Alchemy**, **Battery**, and **Musical Colors**.  It uses the Web Audio API
+to analyse audio from a file or microphone and renders colourful,
+swirling lines and particles on a full‑screen canvas.
 
 ## Features
 
-* **MilkDrop‑style visualizations via Butterchurn** – When the “MilkDrop” mode is active, the app creates a Butterchurn visualizer, feeds it audio from the user’s selected source (file or microphone) and renders a preset onto the `<canvas>` element.  Butterchurn performs its own FFT and beat detection internally【569572155840304†L60-L87】.
-* **Geiss stub module** – Press the **Geiss** toggle to switch to a simple color‑swirling effect rendered with the Canvas 2D API.  This demonstrates how a future Geiss port could plug into the same interface.
-* **Audio source selection** – Users can either upload an audio file or allow microphone access.  The file input uses the WebAudio `decodeAudioData` API, while microphone capture uses `getUserMedia`.
-* **Responsive layout** – The UI is built with Flexbox and scales to different screen sizes.  Buttons are clearly labeled and the canvas automatically resizes to fill the available area.
+- **Real‑time FFT analysis** – The visualizer extracts the frequency
+  spectrum of the audio and maps each frequency band to a rotating arc.
+- **Swirling arcs and particles** – Multiple concentric arcs and
+  particles respond to amplitude and cycle through hues reminiscent of
+  WMP’s classic “trippy” visuals.
+- **Audio sources** – You can select an audio file from your device or
+  use your microphone as the input.  When no audio source is
+  connected, the visualizer still animates softly so the screen isn’t
+  blank.
+- **Responsive and touch‑friendly UI** – Buttons and overlay messages
+  guide the user and resume the `AudioContext` on interaction.
 
-## Running locally
+## Running the app
 
-Since modern browsers enforce strict file‑access policies, it’s best to serve the app from a local web server.  If you have Python installed, run:
+Because browsers block microphone access and file playback from local
+files, you should serve the app via a local web server:
 
-```bash
-cd web_app
+```sh
+cd web_app_xp
 python3 -m http.server 8080
 ```
 
-Then open `http://localhost:8080` in your browser.
+Then open `http://localhost:8080` in a modern WebGL‑capable browser
+(Chrome, Firefox, Edge).  Click **Load Audio File** to select a song
+from your computer or click **Use Microphone** to visualise live
+audio.  The overlay will disappear once the audio starts.
 
-Alternatively, you can simply open `index.html` directly in a modern browser, but the file upload may be restricted depending on browser security settings.
+## Customising the visuals
 
-## Extending the MVP
+The core visualisation logic resides in `app.js` within the
+`XPVisualizer` class.  You can experiment with the following to
+fine‑tune the look:
 
-* **Real Geiss and AVS modules** – Replace the simple gradient effect in `app.js` with a real port of the Geiss or AVS algorithms.  For Geiss, you could translate the original effect into GLSL and render via WebGL.
-* **Preset management** – At present, the app loads a single default preset using Butterchurn.  You can load additional presets via the `butterchurn-presets` package or by dropping MilkDrop preset files into a server and loading them dynamically.
-* **GUI controls** – Use a library like [Tweakpane](https://cocopon.github.io/tweakpane/) or build your own React/Vue interface to allow users to select presets, adjust parameters, and view performance metrics.
+- Adjust the `fftSize` on the analyser (default 512) to change the
+  number of frequency bands.  A higher value yields more detail.
+- Tweak the colour formulas in `animate()` to change the hue and
+  lightness transitions.
+- Modify `smoothingTimeConstant` on the analyser to control how
+  aggressively the display follows the audio.
 
-## License
-
-This web MVP is released under the MIT licence.  It depends on Butterchurn, which is MIT‑licensed as well.
+Enjoy reminiscing with modern browser technology!
