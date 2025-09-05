@@ -19,8 +19,9 @@ body {
   transform: translateX(-50%);
   z-index: 10;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: rgba(0, 0, 0, 0.5);
   padding: 8px 16px;
   border-radius: 8px;
@@ -32,6 +33,42 @@ body {
   margin: 0;
   font-size: 1.2rem;
   font-weight: normal;
+  color: #ffd700;
+}
+
+/* Tab bar styles */
+#tab-bar {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-button {
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.tab-button.active,
+.tab-button:hover {
+  background: #1e90ff;
+}
+
+/* Fullscreen button */
+#fullscreen-btn {
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
+#fullscreen-btn:hover {
   color: #ffd700;
 }
 

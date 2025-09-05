@@ -10,15 +10,31 @@ swirling lines and particles on a full‑screen canvas.
 
 - **Real‑time FFT analysis** – The visualizer extracts the frequency
   spectrum of the audio and maps each frequency band to a rotating arc.
-- **Swirling arcs and particles** – Multiple concentric arcs and
-  particles respond to amplitude and cycle through hues reminiscent of
-  WMP’s classic “trippy” visuals.
+- **Multiple visual styles** – Choose from three modes: **Swirl**
+  (concentric arcs and particles), **Burst** (radial explosions with
+  swirling scribbles) and **Spectrum 3D** (a pseudo‑3D spectrum analyzer
+  with coloured bars).  Switch styles at runtime via the tab bar.
+- **Swirling arcs and particles** – The Swirl mode replicates the
+  classic hypnotic look of the Ambience/Alchemy visualizations with
+  concentric arcs and swirling particles that change colour with the
+  music.
+  
+- **Radial burst & scribble** – Burst mode draws spikes radiating
+  outward from the centre like the “Ice Storm” visualization and
+  overlays a randomly evolving scribble path synced to the beat.
+  
+- **3D spectrum bars** – Spectrum 3D approximates the “3D Spectrum
+  Analyzer” plug‑in using 2.5‑D extruded bars that grow and change
+  colour (green‑to‑red) based on frequency amplitude.
 - **Audio sources** – You can select an audio file from your device or
   use your microphone as the input.  When no audio source is
   connected, the visualizer still animates softly so the screen isn’t
   blank.
 - **Responsive and touch‑friendly UI** – Buttons and overlay messages
   guide the user and resume the `AudioContext` on interaction.
+
+- **Fullscreen toggle** – Click the ⛶ button to enter or exit
+  fullscreen mode for an immersive experience.
 
 ## Running the app
 
