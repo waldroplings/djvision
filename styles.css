@@ -1,0 +1,80 @@
+/* Basic reset and variables */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+body {
+  background-color: #0f1018;
+  color: #f2f2f2;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: #1e2130;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.topbar h1 {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #30344d;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.9rem;
+}
+.btn:hover {
+  background-color: #3f4363;
+}
+.btn.active {
+  background-color: #5565b9;
+}
+
+.file-label {
+  display: inline-block;
+}
+
+#visualizerCanvas {
+  width: 100%;
+  height: calc(100vh - 160px);
+  background-color: #000;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+@media (max-width: 600px) {
+  .controls {
+    flex-direction: column;
+  }
+  #visualizerCanvas {
+    height: calc(100vh - 220px);
+  }
+}
